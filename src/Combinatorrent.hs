@@ -31,6 +31,7 @@ import Supervisor
 import Torrent
 import Version
 import qualified Test
+import Gui
 
 main :: IO ()
 main = do args <- getArgs
@@ -133,7 +134,7 @@ download flags names = do
     pid <- generatePeerId
     (tid, _) <- allForOne "MainSup"
               (workersWatch ++
-              [ Worker $ Console.start waitC statusC
+              [ Worker $ Console.start waitC statusC names
               , Worker $ TorrentManager.start watchC statusC stv chokeC pid pmC
               , setupStatus flags statusC stv
               , Worker $ PeerMgr.start pmC pid chokeC rtv

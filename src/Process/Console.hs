@@ -17,7 +17,7 @@ import Prelude hiding (catch)
 import Process
 import qualified Process.Status as St
 import Supervisor
-
+import Gui
 
 data Cmd = Quit -- ^ Quit the program
          | Show -- ^ Show current state
@@ -35,27 +35,27 @@ instance Logging CF where
 
 -- | Start the logging process and return a channel to it. Sending on this
 --   Channel means writing stuff out on stdOut
-start :: TMVar () -> St.StatusChannel -> SupervisorChannel -> IO ThreadId
-start waitC statusC supC = do
+start :: TMVar () -> St.StatusChannel -> [String] -> SupervisorChannel -> IO ThreadId
+start waitC statusC names supC = do
     cmdC <- readerP -- We shouldn't be doing this in the long run
     wrtC <- writerP
     spawnP (CF cmdC wrtC) () ({-# SCC "Console" #-}
                                 catchP eventLoop (defaultStopHandler supC))
   where
-    eventLoop = do
-        c <- asks cmdCh
-        o <- asks wrtCh
-        m <- liftIO . atomically $ readTChan c
-        case m of
-            Quit -> liftIO . atomically $ putTMVar waitC ()
-            Help -> liftIO . atomically $ writeTChan o helpMessage
-            (Unknown n) -> liftIO . atomically $ writeTChan o $ "Uknown command: " ++ n
-            Show -> do
-                v <- liftIO newEmptyTMVarIO
-                liftIO . atomically $ writeTChan statusC (St.RequestAllTorrents v)
-                sts <- liftIO . atomically $ takeTMVar v
-                liftIO . atomically $ writeTChan o (show sts)
-        eventLoop
+    eventLoop = mainScreen waitC statusC names
+        -- c <- asks cmdCh
+        -- o <- asks wrtCh
+        -- m <- liftIO . atomically $ readTChan c
+        -- case m of
+        --     Quit -> liftIO . atomically $ putTMVar waitC ()
+        --     Help -> liftIO . atomically $ writeTChan o helpMessage
+        --     (Unknown n) -> liftIO . atomically $ writeTChan o $ "Uknown command: " ++ n
+        --     Show -> do
+        --         v <- liftIO newEmptyTMVarIO
+        --         liftIO . atomically $ writeTChan statusC (St.RequestAllTorrents v)
+        --         sts <- liftIO . atomically $ takeTMVar v
+        --         liftIO . atomically $ writeTChan o (show sts)
+        -- eventLoop
 
 helpMessage :: String
 helpMessage = concat
