@@ -20,6 +20,7 @@ import System.Log.Handler.Simple
 import System.IO as SIO
 
 import qualified Process.Console as Console
+import qualified Process.Gui as Gui
 import qualified Process.PeerMgr as PeerMgr
 import qualified Process.ChokeMgr as ChokeMgr (start)
 import qualified Process.Listen as Listen
@@ -31,7 +32,7 @@ import Supervisor
 import Torrent
 import Version
 import qualified Test
-import Gui
+
 
 main :: IO ()
 main = do args <- getArgs
@@ -134,7 +135,7 @@ download flags names = do
     pid <- generatePeerId
     (tid, _) <- allForOne "MainSup"
               (workersWatch ++
-              [ Worker $ Console.start waitC statusC names
+              [ Worker $ Gui.start waitC statusC names
               , Worker $ TorrentManager.start watchC statusC stv chokeC pid pmC
               , setupStatus flags statusC stv
               , Worker $ PeerMgr.start pmC pid chokeC rtv
@@ -142,10 +143,11 @@ download flags names = do
               , Worker $ Listen.start defaultPort pmC
               ]) supC
     atomically $ writeTChan watchC (map TorrentManager.AddedTorrent names)
+    putStrLn "Waiting to take TMVar waitC"
     _ <- atomically $ takeTMVar waitC
-    infoM "Main" "Closing down, giving processes 10 seconds to cool off"
+    putStrLn "Closing down, giving processes 10 seconds to cool off"
     atomically $ writeTChan supC (PleaseDie tid)
     threadDelay $ 10*1000000
-    infoM "Main" "Done..."
+    putStrLn "Done..."
     return ()
 
