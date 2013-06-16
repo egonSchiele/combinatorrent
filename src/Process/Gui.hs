@@ -34,7 +34,7 @@ confirmation str accept cancel = do
   addToCollection coll c dFg
 
   d `onDialogAccept` const (shutdownUi >> accept)
-  d `onDialogCancel` const (cancel)
+  d `onDialogCancel` const (shutdownUi >> cancel)
 
   runUi coll $ defaultContext { focusAttr = black `on` yellow }
 
@@ -54,8 +54,6 @@ mainScreen :: TMVar () -> St.StatusChannel -> [String] -> SupervisorChannel -> P
 mainScreen waitC statusC names supC = do
   wrtC <- ask
   liftIO $ do
-    quit <- newButton "Quit"
-
     let completeAttr   = white `on` red
         incompleteAttr = red `on` white
 
@@ -64,22 +62,17 @@ mainScreen waitC statusC names supC = do
     -- status <- plainText "status"
 
     fg <- newFocusGroup
-    -- addToFocusGroup fg (buttonWidget quit)
 
     c <- centered =<< do
         plainText "Your torrents (press ESC to quit):"
           <--> (return $ head statusBars) -- fuck THIS BULLSHIT. HOW THE FUCK DO I FOLD ON <-->!!!
-          <--> (return . buttonWidget $ quit)
           >>= withBoxSpacing 1
 
     coll <- newCollection
     addToCollection coll c fg
 
     let quitFunc = do
-          exitSuccess
-          t <- myThreadId
-          putStrLn $ "killing" ++ (show t)
-          atomically $ writeTChan supC $ IAmDying t
+          shutdownUi
           atomically $ putTMVar waitC ()
 
     let refreshProgress = do
@@ -103,12 +96,10 @@ mainScreen waitC statusC names supC = do
         threadDelay (100000)
         schedule refreshProgress
 
-    quit `onButtonPressed` (const quitFunc)
-
     fg `onKeyPressed` \_ k _ ->
         case k of
           KEsc -> do
-            exitSuccess
+            confirmation "Do you really want to quit?" quitFunc (return ())
             return True
           _ -> return False
 

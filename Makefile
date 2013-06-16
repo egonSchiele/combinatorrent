@@ -46,4 +46,4 @@ tags:
 	hothasktags $$(find src -type f -name '*.*hs') > $@
 
 adit:
-	rm -f freeculture.zip && make && .hsenv/cabal/bin/Combinatorrent freeculture.zip.torrent | tee data.out
+	rm -f freeculture.zip && make && dist/build/Combinatorrent/Combinatorrent freeculture.zip.torrent | tee data.out

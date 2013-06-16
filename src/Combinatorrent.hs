@@ -143,11 +143,10 @@ download flags names = do
               , Worker $ Listen.start defaultPort pmC
               ]) supC
     atomically $ writeTChan watchC (map TorrentManager.AddedTorrent names)
-    putStrLn "Waiting to take TMVar waitC"
     _ <- atomically $ takeTMVar waitC
-    putStrLn "Closing down, giving processes 10 seconds to cool off"
+    debugM "Main" "Closing down, giving processes 10 seconds to cool off"
     atomically $ writeTChan supC (PleaseDie tid)
     threadDelay $ 10*1000000
-    putStrLn "Done..."
+    debugM "Main" "Done..."
     return ()
 
