@@ -59,8 +59,6 @@ mainScreen waitC statusC names supC = do
 
     statusBars <- forM names $ \_ -> newProgressBar completeAttr incompleteAttr
 
-    -- status <- plainText "status"
-
     fg <- newFocusGroup
 
     c <- centered =<< do
